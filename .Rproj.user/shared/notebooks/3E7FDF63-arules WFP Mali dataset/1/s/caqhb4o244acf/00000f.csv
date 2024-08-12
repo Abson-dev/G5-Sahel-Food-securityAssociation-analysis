@@ -1,2 +1,0 @@
-"0","# Zoo_factors <- Zoo_has_legs |> mutate(across(where(is.logical), factor))"
-"0","# sapply(Zoo_factors, class)"

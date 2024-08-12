@@ -1,6 +1,0 @@
-"0","its <- apriori(trans, parameter=list(target = ""frequent"", support = 0.05))"
-"1","Apriori
-"
-"1","
-Parameter specification:
-"

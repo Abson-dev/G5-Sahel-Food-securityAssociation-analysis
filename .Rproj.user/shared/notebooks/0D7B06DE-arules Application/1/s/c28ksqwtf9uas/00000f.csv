@@ -1,2 +1,0 @@
-"0","plot(rules, method = ""graph"")"
-"2","Warning: Too many rules supplied. Only plotting the best 100 using ‘lift’ (change control parameter max if needed)."

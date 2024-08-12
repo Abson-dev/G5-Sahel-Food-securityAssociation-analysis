@@ -1,2 +1,0 @@
-"0","ggplot(tibble(`Itemset Size` = factor(size(its))), aes(`Itemset Size`)) + "
-"0","  geom_bar()"

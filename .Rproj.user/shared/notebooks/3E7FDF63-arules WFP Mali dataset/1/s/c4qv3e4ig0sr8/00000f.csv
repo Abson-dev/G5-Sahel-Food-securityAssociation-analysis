@@ -1,5 +1,0 @@
-"0","#trans <- transactions(Zoo)"
-"0",""
-"0","# Error in discretizeDF(from) : Problem with column zs_potato_inte"
-"0","# Error in discretize(x = structure(c(NA_real_, NA_real_, NA_real_, NA_real_,  : "
-"0","#   Less than 2 uniques breaks left. Maybe the variable has only one value!"
