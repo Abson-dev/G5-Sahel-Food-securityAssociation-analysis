@@ -6,7 +6,7 @@ library(arulesViz)
 
 library(shiny)
 library(bslib)
-library(thematic)
+
 
 library(gitlink)
 
