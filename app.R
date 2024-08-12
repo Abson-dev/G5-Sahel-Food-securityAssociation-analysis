@@ -6,9 +6,9 @@ library(arulesViz)
 
 library(shiny)
 library(bslib)
+library(thematic)
 
-
-library(gitlink)
+#library(gitlink)
 
 
 
@@ -23,7 +23,7 @@ G5SahelruleExplorer = function (x, sidebarWidth = 2, graphHeight = "600px")
   ggplot2::theme_set(ggplot2::theme_minimal())
   
   # Apply the CSS used by the Shiny app to the ggplot2 plots
-  thematic_shiny()
+  thematic::thematic_shiny()
   
   # Set CSS theme
   theme = bs_theme(bootswatch = "darkly",
