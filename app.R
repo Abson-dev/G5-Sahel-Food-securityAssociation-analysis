@@ -1,12 +1,35 @@
+# Load packages used by the app
 library(tidyverse)
 library(arules)
 library(arulesViz)
+
+
+library(shiny)
+library(bslib)
+library(thematic)
+
+library(gitlink)
+
+
+
+
 
 ##############
 G5SahelruleExplorer = function (x, sidebarWidth = 2, graphHeight = "600px") 
 {
   rlang::check_installed(c("shiny", "shinythemes"))
-  shinyTheme <- shinythemes::shinytheme("yeti")
+  #shinyTheme <- shinythemes::shinytheme("yeti")
+  # Set the default theme for ggplot2 plots
+  ggplot2::theme_set(ggplot2::theme_minimal())
+  
+  # Apply the CSS used by the Shiny app to the ggplot2 plots
+  thematic_shiny()
+  
+  # Set CSS theme
+  theme = bs_theme(bootswatch = "darkly",
+                   bg = "#222222",
+                   fg = "#86C7ED",
+                   success ="#86C7ED")
   message("ruleExplorer started.")
   o <- options(warn = 1)
   on.exit(options(o))
@@ -53,7 +76,7 @@ G5SahelruleExplorer = function (x, sidebarWidth = 2, graphHeight = "600px")
     supp <- defaultParam@support
     conf <- defaultParam@confidence
   }
-  shiny::shinyApp(ui = shiny::shinyUI(shiny::fluidPage(theme = shinyTheme, 
+  shiny::shinyApp(ui = shiny::shinyUI(shiny::fluidPage(theme = theme, 
                                                        shiny::titlePanel("Food Security and Household Coping Strategies in the G5 Sahel Countries (2018-2023): Association Rule Explorer"), shiny::sidebarLayout(shiny::sidebarPanel(shiny::htmlOutput("numRulesOutput"), 
                                                                                                                                                 shiny::br(), shiny::sliderInput("supp", "Minimum Support:", 
                                                                                                                                                                                 min = minSupp, max = maxSupp, value = supp, step = (maxSupp - 
