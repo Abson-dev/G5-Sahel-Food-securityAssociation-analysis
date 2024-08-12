@@ -1,0 +1,15 @@
+"0","## Select transactions that contain a certain item"
+"0","trans_insects <- trans_factors[trans %in% ""type=insect""]"
+"0","trans_insects"
+"1","transactions in sparse format with
+"
+"1"," "
+"1","8"
+"1"," "
+"1","transactions (rows) and
+"
+"1"," "
+"1","39"
+"1"," "
+"1","items (columns)
+"

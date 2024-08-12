@@ -1,0 +1,9 @@
+"0","knitr::opts_chunk$set("
+"2","Warning message:
+"
+"2","package ‘arules’ was built under R version 4.3.3 
+"
+"0","	echo = TRUE,"
+"0","	message = FALSE,"
+"0","	warning = FALSE"
+"0",")"

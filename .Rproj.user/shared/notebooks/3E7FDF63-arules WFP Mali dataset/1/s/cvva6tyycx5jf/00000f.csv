@@ -1,0 +1,2 @@
+"0","# Zoo_has_legs <- Zoo |> mutate(legs = legs > 0)"
+"0","# ggplot(Zoo_has_legs, aes(legs)) + geom_bar()"

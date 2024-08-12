@@ -1,0 +1,2 @@
+"0","Zoo = Zoo %>% janitor::remove_constant() %>%"
+"0","  janitor::remove_empty()"

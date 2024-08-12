@@ -1,0 +1,14 @@
+"0","trans <- transactions(Zoo_has_legs)"
+"0","trans"
+"1","transactions in sparse format with
+"
+"1"," "
+"1","101"
+"1"," "
+"1","transactions (rows) and
+"
+"1"," "
+"1","23"
+"1"," "
+"1","items (columns)
+"

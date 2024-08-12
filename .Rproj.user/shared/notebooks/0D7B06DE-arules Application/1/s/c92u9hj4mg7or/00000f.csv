@@ -1,0 +1,8 @@
+"0","plot(rules, engine = ""html"")"
+"2","Warning: Too many rules supplied. Only plotting the best 1000 using ‘lift’ (change control parameter max if needed)."
+"2","To reduce overplotting, jitter is added! Use jitter = 0 to prevent jitter.
+"
+"2","Registered S3 method overwritten by 'data.table':
+  method           from
+  print.data.table     
+"

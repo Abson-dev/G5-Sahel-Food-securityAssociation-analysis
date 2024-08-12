@@ -1,0 +1,2 @@
+"0","# vertical <- as(trans, ""tidLists"")"
+"0","# as(vertical, ""matrix"")[1:10, 1:5]"

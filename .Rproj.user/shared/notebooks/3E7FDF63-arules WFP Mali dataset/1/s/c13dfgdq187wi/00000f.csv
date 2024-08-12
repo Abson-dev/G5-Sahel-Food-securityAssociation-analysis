@@ -1,0 +1,4 @@
+"0","type <- grep(""type="", itemLabels(trans), value = TRUE)"
+"0","type"
+"1","character(0)
+"

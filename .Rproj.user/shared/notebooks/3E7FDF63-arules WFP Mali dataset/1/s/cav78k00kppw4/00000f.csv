@@ -1,0 +1,6 @@
+"0","rules <- apriori(trans, parameter = list(support = 0.05, confidence = 0.9))"
+"1","Apriori
+"
+"1","
+Parameter specification:
+"

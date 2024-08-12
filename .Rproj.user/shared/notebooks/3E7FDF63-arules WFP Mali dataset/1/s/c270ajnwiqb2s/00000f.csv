@@ -1,0 +1,1 @@
+"0","rules_type |> sort(by = ""lift"") |> head() |> inspect()"

@@ -1,0 +1,47 @@
+"2","  112: [37m<Anonymous>[39m
+"
+"2",""
+"2","  110: [37mctrl$objs[[1]][39m
+"
+"2",""
+"2","  109: [37mvisNetwork::visIgraphLayout[39m
+"
+"2",""
+"2","  108: [37m%in%[39m
+"
+"2",""
+"2","  107: [37mvisNetwork::visOptions[39m
+"
+"2",""
+"2","  106: [37m%>%[39m
+"
+"2",""
+"2","  105: [37mgraph_visNetwork[39m
+"
+"2",""
+"2","  104: [37mgraphplot[39m
+"
+"2",""
+"2","  103: [37mplot.rules[39m
+"
+"2",""
+"2","   99: [37mshinyRenderWidget[39m
+"
+"2",""
+"2","   98: [37mfunc[39m
+"
+"2",""
+"2","   85: [37mrenderFunc[39m
+"
+"2",""
+"2","   84: [37moutput$graphPlot[39m
+"
+"2",""
+"2","    3: [37mrunApp[39m
+"
+"2",""
+"2","    2: [37mprint.shiny.appobj[39m
+"
+"2",""
+"2","    1: [37m<Anonymous>[39m
+"

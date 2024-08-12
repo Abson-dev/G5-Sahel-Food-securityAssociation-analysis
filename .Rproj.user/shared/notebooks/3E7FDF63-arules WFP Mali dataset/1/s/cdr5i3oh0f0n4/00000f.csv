@@ -1,0 +1,3 @@
+"0","## Select transactions that contain a certain item"
+"0","# trans_insects <- trans_factors[trans %in% ""type=insect""]"
+"0","# trans_insects"

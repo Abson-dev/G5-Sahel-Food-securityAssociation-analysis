@@ -1,0 +1,2 @@
+"0","# Zoo_unique_leg_values <- Zoo |> mutate(legs = factor(legs))"
+"0","# Zoo_unique_leg_values$legs |> head()"

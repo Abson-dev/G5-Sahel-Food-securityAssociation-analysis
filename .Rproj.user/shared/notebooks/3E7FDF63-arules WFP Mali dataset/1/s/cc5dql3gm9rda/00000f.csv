@@ -1,0 +1,6 @@
+"0",""
+"0","ggplot("
+"0","  tibble("
+"0","    Support = sort(itemFrequency(trans, type = ""absolute""), decreasing = TRUE),"
+"0","    Item = seq_len(ncol(trans))"
+"0","  ), aes(x = Item, y = Support)) + geom_line()"

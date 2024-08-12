@@ -1,0 +1,403 @@
+---
+title: "Association Analysis"
+author: "Aboubacar HEMA"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{r}
+library(tidyverse)
+library(arules)
+library(arulesViz)
+```
+
+
+
+# 5.1.2 Transactions
+
+## 5.1.2.1 Create Transactions
+
+```{r}
+data(Zoo, package = "mlbench")
+head(Zoo)
+```
+
+The data in the data.frame need to be converted into a set of transactions where each row represents a transaction and each column is translated into items. This is done using the constructor transactions(). For the Zoo data set this means that we consider animals as transactions and the different traits (features) will become items that each animal has.
+
+
+```{r}
+trans <- transactions(Zoo)
+```
+
+
+```{r}
+head(trans)
+```
+
+
+The conversion gives a warning because only discrete features (factor and logical) can be directly translated into items. Continuous features need to be discretized first.
+
+```{r}
+ggplot(Zoo, aes(legs)) + geom_bar()
+```
+
+```{r}
+Zoo$legs |> table()
+```
+Possible solution: Make legs into has/does not have legs
+
+
+```{r}
+Zoo_has_legs <- Zoo |> mutate(legs = legs > 0)
+ggplot(Zoo_has_legs, aes(legs)) + geom_bar()
+```
+```{r}
+Zoo_has_legs$legs |> table()
+```
+
+**Alternatives:**
+
+- use each unique value as an item:
+
+```{r}
+Zoo_unique_leg_values <- Zoo |> mutate(legs = factor(legs))
+Zoo_unique_leg_values$legs |> head()
+```
+
+- discretize
+
+```{r}
+Zoo_discretized_legs <- Zoo |> mutate(
+  legs = discretize(legs, breaks = 2, method="interval")
+)
+table(Zoo_discretized_legs$legs)
+```
+
+Convert data into a set of transactions
+
+```{r}
+trans <- transactions(Zoo_has_legs)
+trans
+```
+
+## 5.1.2.2 Inspect Transactions
+
+```{r}
+summary(trans)
+```
+
+```{r}
+colnames(trans)
+```
+
+Compare with the original features (column names) from Zoo
+
+```{r}
+colnames(Zoo)
+```
+
+Look at a (first) few transactions as a matrix. 1 indicates the presence of an item.
+
+```{r}
+as(trans, "matrix")[1:3,]
+```
+
+Look at the transactions as sets of items
+
+```{r}
+inspect(trans[1:3])
+```
+```{r}
+image(trans)
+```
+
+Look at the relative frequency (=support) of items in the data set. Here we look at the 10 most frequent items.
+
+```{r}
+itemFrequencyPlot(trans,topN = 20)
+```
+
+```{r}
+
+ggplot(
+  tibble(
+    Support = sort(itemFrequency(trans, type = "absolute"), decreasing = TRUE),
+    Item = seq_len(ncol(trans))
+  ), aes(x = Item, y = Support)) + geom_line()
+```
+
+**Alternative encoding:** Also create items for FALSE (use factor)
+
+```{r}
+sapply(Zoo_has_legs, class)
+```
+```{r}
+Zoo_factors <- Zoo_has_legs |> mutate(across(where(is.logical), factor))
+sapply(Zoo_factors, class)
+```
+
+```{r}
+summary(Zoo_factors)
+```
+```{r}
+trans_factors <- transactions(Zoo_factors)
+trans_factors
+```
+
+```{r}
+
+itemFrequencyPlot(trans_factors, topN = 20)
+```
+
+```{r}
+## Select transactions that contain a certain item
+trans_insects <- trans_factors[trans %in% "type=insect"]
+trans_insects
+```
+
+```{r}
+inspect(trans_insects)
+```
+
+## 5.1.2.3 Vertical Layout (Transaction ID Lists)
+
+The default layout for transactions is horizontal layout (i.e. each transaction is a row). The vertical layout represents transaction data as a list of transaction IDs for each item (= transaction ID lists).
+
+```{r}
+vertical <- as(trans, "tidLists")
+as(vertical, "matrix")[1:10, 1:5]
+```
+# 5.2 Frequent Itemset Generation
+
+For this dataset we have already a huge number of possible itemsets.
+
+```{r}
+2^ncol(trans)
+```
+
+Find frequent itemsets (target=“frequent”) with the default settings.
+
+```{r}
+its <- apriori(trans, parameter=list(target = "frequent"))
+```
+```{r}
+its
+```
+
+Default minimum support is .1 (10%). Note: We use here a very small data set. For larger datasets the default minimum support might be to low and you may run out of memory. You probably want to start out with a higher minimum support like .5 (50%) and then work your way down.
+
+```{r}
+5/nrow(trans)
+```
+
+In order to find itemsets that effect 5 animals I need to go down to a support of about 5%.
+
+```{r}
+its <- apriori(trans, parameter=list(target = "frequent", support = 0.05))
+```
+
+```{r}
+its
+```
+
+Sort by support
+
+```{r}
+its <- sort(its, by = "support")
+its |> head(n = 10) |> inspect()
+```
+
+Look at frequent itemsets with many items (set breaks manually since Automatically chosen breaks look bad)
+
+```{r}
+ggplot(tibble(`Itemset Size` = factor(size(its))), aes(`Itemset Size`)) + 
+  geom_bar()
+```
+```{r}
+its[size(its) > 8] |> inspect()
+```
+
+# 5.3 Rules Generation
+
+We use the APRIORI algorithm
+
+```{r}
+rules <- apriori(trans, parameter = list(support = 0.05, confidence = 0.9))
+```
+```{r}
+length(rules)
+```
+
+```{r}
+rules |> head() |> inspect()
+```
+```{r}
+rules |> head() |> quality()
+```
+
+Look at rules with highest lift
+
+```{r}
+rules <- sort(rules, by = "lift")
+rules |> head(n = 10) |> inspect()
+```
+Create rules using the alternative encoding (with “FALSE” item)
+
+```{r}
+r <- apriori(trans_factors)
+```
+
+```{r}
+r
+```
+
+```{r}
+print(object.size(r), unit = "Mb")
+```
+
+```{r}
+inspect(r[1:10])
+```
+```{r}
+r |> head(n = 10, by = "lift") |> inspect()
+```
+## 5.3.1 Calculate Additional Interest Measures
+
+```{r}
+interestMeasure(rules[1:10], measure = c("phi", "gini"),
+  trans = trans)
+```
+
+Add measures to the rules
+
+```{r}
+quality(rules) <- cbind(quality(rules),
+  interestMeasure(rules, measure = c("phi", "gini"),
+    trans = trans))
+```
+
+## 5.3.2 Mine Using Templates
+
+Sometimes it is beneficial to specify what items should be where in the rule. For apriori we can use the parameter appearance to specify this (see ? APappearance). In the following we restrict rules to an animal type in the RHS and any item in the LHS.
+
+```{r}
+type <- grep("type=", itemLabels(trans), value = TRUE)
+type
+```
+
+```{r}
+rules_type <- apriori(trans, appearance= list(rhs = type))
+```
+```{r}
+rules_type |> sort(by = "lift") |> head() |> inspect()
+```
+Saving rules as a CSV-file to be opened with Excel or other tools.
+
+```{r}
+write(rules, file = "rules.csv", quote = TRUE)
+```
+
+
+# 5.4 Compact Representation of Frequent Itemsets
+
+Find maximal frequent itemsets (no superset if frequent)
+
+```{r}
+its_max <- its[is.maximal(its)]
+its_max
+```
+
+```{r}
+its_max |> head(by = "support") |> inspect()
+```
+
+Find closed frequent itemsets (no superset if frequent)
+
+```{r}
+its_closed <- its[is.closed(its)]
+its_closed
+```
+
+```{r}
+its_closed |> head(by = "support") |> inspect()
+```
+```{r}
+
+counts <- c(
+  frequent=length(its),
+  closed=length(its_closed),
+  maximal=length(its_max)
+)
+
+ggplot(as_tibble(counts, rownames = "Itemsets"),
+  aes(Itemsets, counts)) + geom_bar(stat = "identity")
+```
+
+# 5.5 Association Rule Visualization
+
+Visualization is a very powerful approach to analyse large sets of mined association rules and frequent itemsets. We present here some options to create static visualizations and inspect rule sets interactively.
+
+## 5.5.1 Static Visualizations
+
+```{r}
+library(arulesViz)
+```
+
+```{r}
+plot(rules)
+## To reduce overplotting, jitter is added! Use jitter = 0 to prevent jitter.
+```
+
+Note that some jitter (randomly move points) was added to show how many rules have the same confidence and support value. Without jitter:
+
+```{r}
+plot(rules, control = list(jitter = 0))
+```
+
+```{r}
+
+plot(rules, shading = "order")
+## To reduce overplotting, jitter is added! Use jitter = 0 to prevent jitter.
+```
+
+Grouped plot
+
+```{r}
+plot(rules, method = "grouped")
+```
+
+As a graph
+
+```{r}
+plot(rules, method = "graph")
+```
+
+```{r}
+plot(rules |> head(by = "phi", n = 100), method = "graph")
+```
+
+```{r}
+inspectDT(rules,options = list(scrollX = TRUE))
+```
+```{r}
+plot(rules, engine = "html")
+```
+
+```{r}
+plot(rules, method = "matrix", engine = "html")
+```
+```{r}
+plot(rules, method = "graph", engine = "html")
+```
+```{r}
+#ruleExplorer(rules)
+```
+

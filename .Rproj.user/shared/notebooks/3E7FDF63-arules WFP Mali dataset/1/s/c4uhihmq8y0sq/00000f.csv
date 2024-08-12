@@ -1,0 +1,3 @@
+"0","quality(rules) <- cbind(quality(rules),"
+"0","  interestMeasure(rules, measure = c(""phi"", ""gini""),"
+"0","    trans = trans))"

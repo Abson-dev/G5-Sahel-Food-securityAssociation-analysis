@@ -1,0 +1,2 @@
+"0","plot(rules, method = ""matrix"", engine = ""html"")"
+"2","Warning: Too many rules supplied. Only plotting the best 1000 using ‘lift’ (change control parameter max if needed)."

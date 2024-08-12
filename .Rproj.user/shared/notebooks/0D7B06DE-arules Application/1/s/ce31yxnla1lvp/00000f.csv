@@ -1,0 +1,4 @@
+"0",""
+"0","plot(rules, shading = ""order"")"
+"2","To reduce overplotting, jitter is added! Use jitter = 0 to prevent jitter.
+"

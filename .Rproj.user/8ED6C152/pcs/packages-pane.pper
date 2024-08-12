@@ -1,0 +1,7 @@
+{
+    "installOptions": {
+        "installFromRepository": true,
+        "libraryPath": "C:/Users/AHema/AppData/Local/Programs/R/R-4.3.2/library",
+        "installDependencies": true
+    }
+}
