@@ -12,8 +12,67 @@ library(shinythemes)
 
 
 
+library(haven)
+G5_Sahel_2018_2023_Mali_enhanced <- read_dta("C:/Users/AHema/OneDrive - CGIAR/Desktop/2024/WFP/G5 - Sahel countries/Integrated & enhanced dataset Mali/Integrated & enhanced dataset Mali/G5_Sahel_2018_2023_Mali_enhanced.dta")
+
+G5_Sahel_2018_2023_Mali_enhanced = G5_Sahel_2018_2023_Mali_enhanced %>% 
+  labelled::to_factor()
+#View(G5_Sahel_2018_2023_Mali_enhanced)
+
+#Create ID by using admin2PcodN, wave and generate values between 1 to number rows (123,382)
+G5_Sahel_2018_2023_Mali_enhanced = G5_Sahel_2018_2023_Mali_enhanced %>%
+  mutate(ID = paste0(admin2PcodN,"_",wave,"_",1:nrow(G5_Sahel_2018_2023_Mali_enhanced)))
+
+tmp_data = G5_Sahel_2018_2023_Mali_enhanced
+
+#converted into a set of transactions where each row (ID) represents a transaction
+tmp_data <- tmp_data %>% tibble::column_to_rownames(var="ID")
 
 
+#"admin0Pcod"  "admin0name"  "admin1Pcod"  "admin1name"  "admin2PcodN" "admin2name"
+# tmp_data = tmp_data %>% 
+#   dplyr::select(-c(gtsummary::starts_with("admin")))
+tmp_data = tmp_data %>% 
+  dplyr::select(-c("admin0Pcod","admin0name","admin1Pcod","admin2PcodN"))
+
+weight <-tmp_data$weight
+#"hhid","year","wave","weight"
+tmp_data = tmp_data %>% 
+  dplyr::select(-c("hhid","weight"))
+#184 variables
+
+tmp_data = tmp_data %>% janitor::remove_constant()
+#178 variables
+# "zs_potato_inte","zs_orange_inte","zs_potato_freq","zs_orange_freq","zs_potato_spell","zs_orange_spell"
+
+tmp_data_df = tmp_data
+
+#Less than 2 uniques breaks left. Maybe the variable has only one value!
+
+working_data = tmp_data_df %>% dplyr::select(-c("heavy_freq_nov","heavy_spell_nov","dry_freq_dec","dry_spell_dec","heavy_freq_dec","heavy_spell_dec","dry_freq_jan","dry_spell_jan","heavy_freq_jan","heavy_spell_jan","heavy_freq_feb","heavy_spell_feb","heavy_freq_mar","heavy_spell_mar","heavy_freq_apr","heavy_spell_apr","cold_freq_oct","cold_spell_oct","hot_freq_nov","hot_spell_nov","hot_freq_dec","hot_spell_dec","hot_freq_jan","hot_spell_jan","cold_freq_may","cold_spell_may","cold_freq_jun","cold_spell_jun","cold_freq_jul","cold_spell_jul","cold_freq_aug","cold_spell_aug","cold_freq_sep","cold_spell_sep"))
+
+
+#144 variables
+
+
+# converted into a set of transactions where each row represents a transaction and each column is translated into items
+trans <- transactions(working_data)
+#colnames(trans)
+## add weight information
+transactionInfo(trans) <- data.frame(weight = weight)
+#colnames(trans)
+# Rules Generation
+
+#We use the APRIORI algorithm
+minsup = 0.65
+minconf = 0.9
+# rules <- apriori(trans, parameter = list(support = minsup, confidence = minconf))
+## mine weighed support itemsets
+s <- weclat(trans, parameter = list(support = minsup),
+            control = list(verbose = TRUE))
+## create association rules
+rules <- ruleInduction(s,method = c("apriori"), confidence = minconf,transactions = trans, verbose = TRUE)
+#method = c("ptree", "apriori")
 ##############
 G5SahelruleExplorer = function (x, sidebarWidth = 2, graphHeight = "600px") 
 {
