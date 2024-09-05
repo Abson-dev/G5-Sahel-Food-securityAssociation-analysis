@@ -40,8 +40,7 @@ working_data <- working_data %>%
 
 working_data <- working_data %>% labelled::to_factor()
 
-df= working_data %>% 
-  dplyr::select(c(12, 14, 27, 29, 42, 44))
+
 # "D1_zs_onion_inte","D1_zs_milkpowder_inte"
 # "D1_zs_milkpowder_freq","D1_zs_sugar_freq"     
 # "D1_zs_sugar_spell","D1_R_drought"
@@ -59,12 +58,11 @@ arules::transactionInfo(trans) <- data.frame(weight = weight)
 
 
 #We use the APRIORI algorithm
-minsup = 0.5
+minsup = 0.65
 minconf = 0.9
 # rules <- apriori(trans, parameter = list(support = minsup, confidence = minconf))
 ## Weighted Eclat (WEclat)
-s <- arules::weclat(trans, parameter = list(support = minsup),
-            control = list(verbose = TRUE))
+s <- arules::weclat(trans, parameter = list(support = minsup), control = list(verbose = TRUE))
 #References
 #G.D. Ramkumar, S. Ranka, and S. Tsur (1998). Weighted Association Rules: Model and Algorithm, Proceedings of ACM SIGKDD.
 

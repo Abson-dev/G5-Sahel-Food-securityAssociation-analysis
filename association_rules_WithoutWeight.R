@@ -20,8 +20,6 @@ working_data = G5_Sahel_2018_2023_Mali_data
 #converted into a set of transactions where each row (ID) represents a transaction
 working_data <- working_data %>% tibble::column_to_rownames(var="ID")
 
-#weight <-working_data$weight
-
 working_data = working_data %>% 
   dplyr::select(c(gtsummary::starts_with("D1_"),gtsummary::starts_with("D_")))
 #171 variables
@@ -40,8 +38,7 @@ working_data <- working_data %>%
 
 working_data <- working_data %>% labelled::to_factor()
 
-df= working_data %>% 
-  dplyr::select(c(12, 14, 27, 29, 42, 44))
+
 # "D1_zs_onion_inte","D1_zs_milkpowder_inte"
 # "D1_zs_milkpowder_freq","D1_zs_sugar_freq"     
 # "D1_zs_sugar_spell","D1_R_drought"
@@ -54,14 +51,12 @@ trans
 # 123382 transactions (rows) and
 # 318 items (columns)
 colnames(trans)
-## add weight information
-#arules::transactionInfo(trans) <- data.frame(weight = weight)
 
 
 #We use the APRIORI algorithm
-minsup = 0.5
+minsup = 0.75
 minconf = 0.9
- rules <- apriori(trans, parameter = list(support = minsup, confidence = minconf))
+rules <- apriori(trans, parameter = list(support = minsup, confidence = minconf))
 
 
 arulesViz::ruleExplorer(rules)
