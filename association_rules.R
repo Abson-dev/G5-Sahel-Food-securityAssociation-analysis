@@ -28,3 +28,50 @@ working_data = working_data %>%
 
 working_data = working_data %>% janitor::remove_constant()
 #165 variables
+
+vars = working_data %>% names()
+working_data <- working_data %>%
+  mutate_at(vars, as.numeric)
+working_data <- working_data %>% 
+  dplyr::mutate_at(vars, ~labelled::labelled(., labels = c(
+    `Yes` = 1,
+    `No` = 0
+  )))
+
+working_data <- working_data %>% labelled::to_factor()
+
+df= working_data %>% 
+  dplyr::select(c(12, 14, 27, 29, 42, 44))
+# "D1_zs_onion_inte","D1_zs_milkpowder_inte"
+# "D1_zs_milkpowder_freq","D1_zs_sugar_freq"     
+# "D1_zs_sugar_spell","D1_R_drought"
+working_data = working_data %>% 
+  dplyr::select(-c(12, 14, 27, 29, 42, 44))
+# converted into a set of transactions where each row represents a transaction and each column is translated into items
+trans <- arules::transactions(working_data)
+trans
+# transactions in sparse format with
+# 123382 transactions (rows) and
+# 318 items (columns)
+colnames(trans)
+## add weight information
+arules::transactionInfo(trans) <- data.frame(weight = weight)
+
+
+#We use the APRIORI algorithm
+minsup = 0.5
+minconf = 0.9
+# rules <- apriori(trans, parameter = list(support = minsup, confidence = minconf))
+## Weighted Eclat (WEclat)
+s <- arules::weclat(trans, parameter = list(support = minsup),
+            control = list(verbose = TRUE))
+#References
+#G.D. Ramkumar, S. Ranka, and S. Tsur (1998). Weighted Association Rules: Model and Algorithm, Proceedings of ACM SIGKDD.
+
+#Other weighted association mining functions: SunBai, hits()
+
+## create association rules
+rules <- ruleInduction(s,method = c("apriori"), confidence = minconf,transactions = trans, verbose = TRUE)
+
+
+arulesViz::ruleExplorer(rules)
