@@ -9,7 +9,7 @@ library(shinythemes)
 ## Import data and some data wrangling
 
 
-G5_Sahel_2018_2023_Mali_data <- haven::read_dta("data/G5_Sahel_2018_2023_Mali_enhanced_DICHOTOMIZED.dta")
+G5_Sahel_2018_2023_Mali_data <- haven::read_dta("G5_Sahel_2018_2023_Mali_enhanced_DICHOTOMIZED.dta")
 #View(G5_Sahel_2018_2023_Mali_data)
 G5_Sahel_2018_2023_Mali_data = G5_Sahel_2018_2023_Mali_data %>% 
   labelled::to_factor()
