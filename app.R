@@ -1,78 +1,86 @@
-# Load packages used by the app
-library(tidyverse)
-library(arules)
-library(arulesViz)
-
+library(tidyverse) # for data manipulation
+library(arules) # for association analysis
+library(arulesViz) # for rules vizualisation
 
 library(shiny)
 library(bslib)
 library(thematic)
 library(shinythemes)
-#library(gitlink)
+## Import data and some data wrangling
 
 
-
-library(haven)
-G5_Sahel_2018_2023_Mali_enhanced <- read_dta("C:/Users/AHema/OneDrive - CGIAR/Desktop/2024/WFP/G5 - Sahel countries/Integrated & enhanced dataset Mali/Integrated & enhanced dataset Mali/G5_Sahel_2018_2023_Mali_enhanced.dta")
-
-G5_Sahel_2018_2023_Mali_enhanced = G5_Sahel_2018_2023_Mali_enhanced %>% 
+G5_Sahel_2018_2023_Mali_data <- haven::read_dta("data/G5_Sahel_2018_2023_Mali_enhanced_DICHOTOMIZED.dta")
+#View(G5_Sahel_2018_2023_Mali_data)
+G5_Sahel_2018_2023_Mali_data = G5_Sahel_2018_2023_Mali_data %>% 
   labelled::to_factor()
-#View(G5_Sahel_2018_2023_Mali_enhanced)
+#View(G5_Sahel_2018_2023_Mali_data)
 
 #Create ID by using admin2PcodN, wave and generate values between 1 to number rows (123,382)
-G5_Sahel_2018_2023_Mali_enhanced = G5_Sahel_2018_2023_Mali_enhanced %>%
-  mutate(ID = paste0(admin2PcodN,"_",wave,"_",1:nrow(G5_Sahel_2018_2023_Mali_enhanced)))
+G5_Sahel_2018_2023_Mali_data = G5_Sahel_2018_2023_Mali_data %>%
+  mutate(ID = paste0(admin2PcodN,"_",wave,"_",1:nrow(G5_Sahel_2018_2023_Mali_data)))
 
-tmp_data = G5_Sahel_2018_2023_Mali_enhanced
+working_data = G5_Sahel_2018_2023_Mali_data
 
 #converted into a set of transactions where each row (ID) represents a transaction
-tmp_data <- tmp_data %>% tibble::column_to_rownames(var="ID")
+working_data <- working_data %>% tibble::column_to_rownames(var="ID")
+
+working_data = working_data %>% 
+  dplyr::select(c(gtsummary::starts_with("D1_"),gtsummary::starts_with("D_")))
+#171 variables
+
+working_data = working_data %>% janitor::remove_constant()
+#165 variables
+
+vars = working_data %>% names()
+working_data <- working_data %>%
+  mutate_at(vars, as.numeric)
+working_data <- working_data %>% 
+  dplyr::mutate_at(vars, ~labelled::labelled(., labels = c(
+    `Yes` = 1,
+    `No` = 0
+  )))
+
+working_data <- working_data %>% labelled::to_factor()
 
 
-#"admin0Pcod"  "admin0name"  "admin1Pcod"  "admin1name"  "admin2PcodN" "admin2name"
-# tmp_data = tmp_data %>% 
-#   dplyr::select(-c(gtsummary::starts_with("admin")))
-tmp_data = tmp_data %>% 
-  dplyr::select(-c("admin0Pcod","admin0name","admin1Pcod","admin2PcodN"))
-
-weight <-tmp_data$weight
-#"hhid","year","wave","weight"
-tmp_data = tmp_data %>% 
-  dplyr::select(-c("hhid","weight"))
-#184 variables
-
-tmp_data = tmp_data %>% janitor::remove_constant()
-#178 variables
-# "zs_potato_inte","zs_orange_inte","zs_potato_freq","zs_orange_freq","zs_potato_spell","zs_orange_spell"
-
-tmp_data_df = tmp_data
-
-#Less than 2 uniques breaks left. Maybe the variable has only one value!
-
-working_data = tmp_data_df %>% dplyr::select(-c("heavy_freq_nov","heavy_spell_nov","dry_freq_dec","dry_spell_dec","heavy_freq_dec","heavy_spell_dec","dry_freq_jan","dry_spell_jan","heavy_freq_jan","heavy_spell_jan","heavy_freq_feb","heavy_spell_feb","heavy_freq_mar","heavy_spell_mar","heavy_freq_apr","heavy_spell_apr","cold_freq_oct","cold_spell_oct","hot_freq_nov","hot_spell_nov","hot_freq_dec","hot_spell_dec","hot_freq_jan","hot_spell_jan","cold_freq_may","cold_spell_may","cold_freq_jun","cold_spell_jun","cold_freq_jul","cold_spell_jul","cold_freq_aug","cold_spell_aug","cold_freq_sep","cold_spell_sep"))
-
-
-#144 variables
-
-
+# "D1_zs_onion_inte","D1_zs_milkpowder_inte"
+# "D1_zs_milkpowder_freq","D1_zs_sugar_freq"     
+# "D1_zs_sugar_spell","D1_R_drought"
+working_data = working_data %>% 
+  dplyr::select(-c(12, 14, 27, 29, 42, 44))
 # converted into a set of transactions where each row represents a transaction and each column is translated into items
-trans <- transactions(working_data)
+trans <- arules::transactions(working_data)
+trans
+# transactions in sparse format with
+# 123382 transactions (rows) and
+# 318 items (columns)
 #colnames(trans)
-## add weight information
-transactionInfo(trans) <- data.frame(weight = weight)
-#colnames(trans)
-# Rules Generation
+
+#####################################
+
+all_items = colnames(trans)
+
+items_to_keep = all_items[!grepl("=No", all_items)]
+
+lhs_items =  items_to_keep[!grepl("D_", items_to_keep)]
+
+rhs_items = items_to_keep[!grepl("D1_", items_to_keep)]  
+
+
+# Filter transactions to keep only those that contain the frequent items
+filtered_transactions <- trans[, items_to_keep]
+#colnames(filtered_transactions)
+
+
+####################################
 
 #We use the APRIORI algorithm
-minsup = 0.65
-minconf = 0.9
-# rules <- apriori(trans, parameter = list(support = minsup, confidence = minconf))
-## mine weighed support itemsets
-s <- weclat(trans, parameter = list(support = minsup),
-            control = list(verbose = TRUE))
-## create association rules
-rules <- ruleInduction(s,method = c("apriori"), confidence = minconf,transactions = trans, verbose = TRUE)
-#method = c("ptree", "apriori")
+support = 0.001
+confidence = 0.65
+
+rules <- apriori(filtered_transactions, parameter = list(support = support, confidence = confidence, target = "rules",minlen = 2),appearance = list(rhs = rhs_items,lhs = lhs_items ))
+
+
 ##############
 G5SahelruleExplorer = function (x, sidebarWidth = 2, graphHeight = "600px") 
 {
@@ -137,51 +145,51 @@ G5SahelruleExplorer = function (x, sidebarWidth = 2, graphHeight = "600px")
   }
   shiny::shinyApp(ui = shiny::shinyUI(shiny::fluidPage(theme = theme, 
                                                        shiny::titlePanel("Food Security and Household Coping Strategies in the G5 Sahel Countries (2018-2023): Association Rule Explorer"), shiny::sidebarLayout(shiny::sidebarPanel(shiny::htmlOutput("numRulesOutput"), 
-                                                                                                                                                shiny::br(), shiny::sliderInput("supp", "Minimum Support:", 
-                                                                                                                                                                                min = minSupp, max = maxSupp, value = supp, step = (maxSupp - 
-                                                                                                                                                                                                                                      minSupp)/10000, sep = ""), shiny::sliderInput("conf", 
-                                                                                                                                                                                                                                                                                    "Minimum Confidence:", min = minConf, max = maxConf, 
-                                                                                                                                                                                                                                                                                    value = conf, step = (maxConf - minConf)/1000, 
-                                                                                                                                                                                                                                                                                    sep = ""), shiny::sliderInput("lift", "Minimum Lift:", 
-                                                                                                                                                                                                                                                                                                                  min = minLift, max = maxLift, value = lift, step = (maxLift - 
-                                                                                                                                                                                                                                                                                                                                                                        minLift)/1000, sep = ""), shiny::sliderInput("length", 
-                                                                                                                                                                                                                                                                                                                                                                                                                     "Rule length (from-to):", min = 2, max = 20, 
-                                                                                                                                                                                                                                                                                                                                                                                                                     value = c(2, 10), step = 1, sep = ""), shiny::em(shiny::HTML("Filter rules by items:")), 
-                                                                                                                                                shiny::selectInput("colsType", NULL, c(`Exclude items:` = "rem", 
-                                                                                                                                                                                       `Require items:` = "req")), shiny::uiOutput("choose_columns"), 
-                                                                                                                                                shiny::selectInput("colsLHSType", NULL, c(`Exclude items from LHS:` = "rem", 
-                                                                                                                                                                                          `Require items in LHS:` = "req")), shiny::uiOutput("choose_lhs"), 
-                                                                                                                                                shiny::selectInput("colsRHSType", NULL, c(`Exclude items from RHS:` = "rem", 
-                                                                                                                                                                                          `Require items in RHS:` = "req")), shiny::uiOutput("choose_rhs"), 
-                                                                                                                                                width = sidebarWidth), shiny::mainPanel(shiny::tabsetPanel(id = "tabs", 
-                                                                                                                                                                                                           shiny::tabPanel("Data Table", value = "datatable", 
-                                                                                                                                                                                                                           shiny::br(), DT::dataTableOutput("rulesDataTable")), 
-                                                                                                                                                                                                           shiny::tabPanel("Scatter", value = "scatter", shiny::wellPanel(shiny::fluidRow(shiny::column(2, 
-                                                                                                                                                                                                                                                                                                        shiny::uiOutput("xAxisSelectInput")), shiny::column(2, 
-                                                                                                                                                                                                                                                                                                                                                            shiny::uiOutput("yAxisSelectInput")), shiny::column(2, 
-                                                                                                                                                                                                                                                                                                                                                                                                                shiny::uiOutput("cAxisSelectInput")), shiny::column(3, 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    shiny::sliderInput("jitter_scatter", "Jitter", 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       min = 0, max = 1, value = 0, step = 1/100, 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       sep = "")), shiny::column(3, shiny::uiOutput("topRules_scatter")))), 
-                                                                                                                                                                                                                           plotly::plotlyOutput("scatterPlot", width = "100%", 
-                                                                                                                                                                                                                                                height = graphHeight)), shiny::tabPanel("Matrix", 
-                                                                                                                                                                                                                                                                                        value = "matrix", shiny::wellPanel(shiny::fluidRow(shiny::column(6, 
-                                                                                                                                                                                                                                                                                                                                                         shiny::uiOutput("cAxisSelectInput_matrix")), 
-                                                                                                                                                                                                                                                                                                                                           shiny::column(6, shiny::uiOutput("topRules_matrix")))), 
-                                                                                                                                                                                                                                                                                        plotly::plotlyOutput("matrixPlot", width = "100%", 
-                                                                                                                                                                                                                                                                                                             height = graphHeight)), shiny::tabPanel("Grouped Matrix", 
-                                                                                                                                                                                                                                                                                                                                                     value = "grouped", shiny::wellPanel(shiny::fluidRow(shiny::column(6, 
-                                                                                                                                                                                                                                                                                                                                                                                                                       shiny::uiOutput("cAxisSelectInput_grouped")), 
-                                                                                                                                                                                                                                                                                                                                                                                                         shiny::column(6, shiny::uiOutput("kSelectInput")))), 
-                                                                                                                                                                                                                                                                                                                                                     shiny::plotOutput("groupedPlot", width = "100%", 
-                                                                                                                                                                                                                                                                                                                                                                       height = graphHeight)), shiny::tabPanel("Graph", 
-                                                                                                                                                                                                                                                                                                                                                                                                               value = "graph", shiny::wellPanel(shiny::fluidRow(shiny::column(6, 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                               shiny::uiOutput("cAxisSelectInput_graph")), 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                 shiny::column(6, shiny::uiOutput("topRules_graph")))), 
-                                                                                                                                                                                                                                                                                                                                                                                                               visNetwork::visNetworkOutput("graphPlot", width = "100%", 
-                                                                                                                                                                                                                                                                                                                                                                                                                                            height = graphHeight)), shiny::tabPanel("Export", 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    value = "export", shiny::br(), shiny::downloadButton("rules.csv", 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         "Export rules (CSV)"))), width = 12 - sidebarWidth)))), 
+                                                                                                                                                                                                                                     shiny::br(), shiny::sliderInput("supp", "Minimum Support:", 
+                                                                                                                                                                                                                                                                     min = minSupp, max = maxSupp, value = supp, step = (maxSupp - 
+                                                                                                                                                                                                                                                                                                                           minSupp)/10000, sep = ""), shiny::sliderInput("conf", 
+                                                                                                                                                                                                                                                                                                                                                                         "Minimum Confidence:", min = minConf, max = maxConf, 
+                                                                                                                                                                                                                                                                                                                                                                         value = conf, step = (maxConf - minConf)/1000, 
+                                                                                                                                                                                                                                                                                                                                                                         sep = ""), shiny::sliderInput("lift", "Minimum Lift:", 
+                                                                                                                                                                                                                                                                                                                                                                                                       min = minLift, max = maxLift, value = lift, step = (maxLift - 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                             minLift)/1000, sep = ""), shiny::sliderInput("length", 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          "Rule length (from-to):", min = 2, max = 20, 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          value = c(2, 10), step = 1, sep = ""), shiny::em(shiny::HTML("Filter rules by items:")), 
+                                                                                                                                                                                                                                     shiny::selectInput("colsType", NULL, c(`Exclude items:` = "rem", 
+                                                                                                                                                                                                                                                                            `Require items:` = "req")), shiny::uiOutput("choose_columns"), 
+                                                                                                                                                                                                                                     shiny::selectInput("colsLHSType", NULL, c(`Exclude items from LHS:` = "rem", 
+                                                                                                                                                                                                                                                                               `Require items in LHS:` = "req")), shiny::uiOutput("choose_lhs"), 
+                                                                                                                                                                                                                                     shiny::selectInput("colsRHSType", NULL, c(`Exclude items from RHS:` = "rem", 
+                                                                                                                                                                                                                                                                               `Require items in RHS:` = "req")), shiny::uiOutput("choose_rhs"), 
+                                                                                                                                                                                                                                     width = sidebarWidth), shiny::mainPanel(shiny::tabsetPanel(id = "tabs", 
+                                                                                                                                                                                                                                                                                                shiny::tabPanel("Data Table", value = "datatable", 
+                                                                                                                                                                                                                                                                                                                shiny::br(), DT::dataTableOutput("rulesDataTable")), 
+                                                                                                                                                                                                                                                                                                shiny::tabPanel("Scatter", value = "scatter", shiny::wellPanel(shiny::fluidRow(shiny::column(2, 
+                                                                                                                                                                                                                                                                                                                                                                                             shiny::uiOutput("xAxisSelectInput")), shiny::column(2, 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                 shiny::uiOutput("yAxisSelectInput")), shiny::column(2, 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     shiny::uiOutput("cAxisSelectInput")), shiny::column(3, 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         shiny::sliderInput("jitter_scatter", "Jitter", 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            min = 0, max = 1, value = 0, step = 1/100, 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            sep = "")), shiny::column(3, shiny::uiOutput("topRules_scatter")))), 
+                                                                                                                                                                                                                                                                                                                plotly::plotlyOutput("scatterPlot", width = "100%", 
+                                                                                                                                                                                                                                                                                                                                     height = graphHeight)), shiny::tabPanel("Matrix", 
+                                                                                                                                                                                                                                                                                                                                                                             value = "matrix", shiny::wellPanel(shiny::fluidRow(shiny::column(6, 
+                                                                                                                                                                                                                                                                                                                                                                                                                                              shiny::uiOutput("cAxisSelectInput_matrix")), 
+                                                                                                                                                                                                                                                                                                                                                                                                                                shiny::column(6, shiny::uiOutput("topRules_matrix")))), 
+                                                                                                                                                                                                                                                                                                                                                                             plotly::plotlyOutput("matrixPlot", width = "100%", 
+                                                                                                                                                                                                                                                                                                                                                                                                  height = graphHeight)), shiny::tabPanel("Grouped Matrix", 
+                                                                                                                                                                                                                                                                                                                                                                                                                                          value = "grouped", shiny::wellPanel(shiny::fluidRow(shiny::column(6, 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            shiny::uiOutput("cAxisSelectInput_grouped")), 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              shiny::column(6, shiny::uiOutput("kSelectInput")))), 
+                                                                                                                                                                                                                                                                                                                                                                                                                                          shiny::plotOutput("groupedPlot", width = "100%", 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            height = graphHeight)), shiny::tabPanel("Graph", 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    value = "graph", shiny::wellPanel(shiny::fluidRow(shiny::column(6, 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    shiny::uiOutput("cAxisSelectInput_graph")), 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      shiny::column(6, shiny::uiOutput("topRules_graph")))), 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    visNetwork::visNetworkOutput("graphPlot", width = "100%", 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 height = graphHeight)), shiny::tabPanel("Export", 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         value = "export", shiny::br(), shiny::downloadButton("rules.csv", 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              "Export rules (CSV)"))), width = 12 - sidebarWidth)))), 
                   server = function(input, output, session) {
                     output$numRulesOutput <- shiny::renderUI({
                       if (is(x, "rules")) {
